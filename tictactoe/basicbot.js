@@ -9,12 +9,20 @@ app.use(bodyParser.json());
 app.use(cors());
 
 app.post('/getmove', (req, res) => {
-  const {callback, history} = req.body();
-  res.send(200);
+  const {callback, history} = req.body;
+  console.log(req.body);
+  res.sendStatus(200);
 
   for (let possibleMove = 0; possibleMove < 9; possibleMove++) {
     if (history.indexOf(possibleMove) < 0) {
-      fetch(callback, possibleMove);
+      console.log('making move:', possibleMove, callback);
+      fetch(callback, {
+        method: 'post',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ move: possibleMove }),
+      });
       break;
     }
   }

@@ -11,17 +11,60 @@ const db = low(adapter);
 const uuidv4 = require('uuid/v4')
 const fetch = require('node-fetch');
 
+const callbackBase = 'http://localhost:3000';
+
 db.defaults({
   bots: {},
   games: {},
   matches: {},
+  nonces: {},
 }).write();
 
 app.use(bodyParser.json());
 app.use(cors());
 
-function askForMove(bot, game) {
-  
+function getNonce(purpose, payload) {
+  let nonce;
+  do {
+    nonce = uuidv4();
+  } while (db.get('nonces').has(nonce).value());
+  if (db.get('nonces').set(nonce, {nonce, purpose, payload}).write()) {
+    return nonce;
+  }
+}
+
+function checkAndWipeNonce(nonce, purpose) {
+  let record = db.get('nonces').get(nonce).value();
+  console.log('found record', record);
+  if (record && record.purpose === purpose) {
+    if (db.get('nonces').unset(nonce).write()) {
+      return record.payload;
+    }
+  }
+  throw new Error('BAD NONCE');
+}
+
+function askForMove(bot, game, match) {
+  let theHook = `${bot.hook}/getmove`;
+  // TODO: this should be brokered by an external server that can only
+  // send requests OUT of the network (and receive in from internal for
+  // the messages that need to be forwarded) so that we can't have people
+  // utilizing this to send local requests
+  let nonce = getNonce('makemove', {
+    bot: bot.id,
+    game: game.id,
+    match: match.id
+  });
+  return fetch(theHook, {
+    method: 'post',
+    headers: {
+      'Content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      callback: `${callbackBase}/makemove/${nonce}`,
+      history: match.history,
+    }),
+  });
 }
 
 app.get('/bots', (req, res) => {
@@ -48,8 +91,14 @@ app.get('/matches', (req, res) => {
   res.send(matchList);
 });
 
-app.post('/startmatch', (req, res) => {
-  const { bots: [botId0, botId1], game: gameId } = req.body;
+app.post('/startmatch', async (req, res) => {
+  let botId0, botId1, gameId;
+  try {
+    ({ bots: [botId0, botId1], game: gameId } = req.body);
+  } catch (err) {
+    res.sendStatus(400);
+    return;
+  }
   // TODO: validate inputs
   const bot0 = db.get('bots').get(botId0).value();
   const bot1 = db.get('bots').get(botId1).value();
@@ -58,7 +107,7 @@ app.post('/startmatch', (req, res) => {
   let matchId;
   do {
     matchId = uuidv4();
-  } while (!db.get('matches').has(matchId));
+  } while (db.get('matches').has(matchId).value());
 
   let matchState = {
     id: matchId,
@@ -68,12 +117,29 @@ app.post('/startmatch', (req, res) => {
     turn: 0,
   };
   db.get('matches').set(matchId, matchState).write();
-
   res.send(matchState);
+
+  console.log('asking for move');
+  try {
+    await askForMove(bot0, game, matchState);
+    console.log('did it happen?')
+  } catch (err) {
+    console.error('yikes', err);
+  }
 });
 
-app.post('/movemade', (req, res) => {
-  
+app.post('/makemove/:nonce', (req, res) => {
+  let nonce = req.params['nonce'];
+  let noncePayload;
+  try {
+    noncePayload = checkAndWipeNonce(nonce, 'makemove');
+  } catch (err) {
+    res.sendStatus(400);
+    console.log('bad nonce', nonce);
+    return;
+  }
+  console.log(noncePayload);
+  console.log('made move at:', req.body);
 });
 
 app.listen(3000);
