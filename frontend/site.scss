@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,800|Roboto');
+
+$coffee-dark: rgb(53, 41, 41);
+$coffee-mid: rgb(177, 107, 81);
+$coffee-mid-light: rgb(205, 165, 153);
+$coffee-light: rgb(240, 234, 222);
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, sans-serif;
+  background-color: $coffee-light;
+}
+
+#site-header {
+  padding: .5em;
+  background-color: $coffee-dark;
+  color: $coffee-light;
+  font-family: Montserrat, Roboto, sans-serif;
+  font-weight: normal;
+  line-height: 1.2em;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+
+  .title {
+    font-weight: bolder;
+    font-size: 1.2em;
+  }
+
+  a, a:visited {
+    color: $coffee-light;
+  }
+}
+
+#site-content-container {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+#site-content {
+  width: 100%;
+  max-width: 900px;
+}
+
+#site-content > .card {
+  margin: 2em;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 3px solid $coffee-dark;
+}
+
+.card {
+  border-radius: .3em;
+  border: 1px solid #f8f8f8;
+  padding: 1em;
+  background-color: white;
+  box-shadow: .2em .2em .4em $coffee-mid-light;
+
+  .card-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    font-family: Montserrat;
+    border-bottom: 2px solid #f8f8f8;
+    margin-bottom: 1em;
+  }
+  
+}
+
+.card .card {
+  .card-title {
+    font-size: 1.2rem;
+  }
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 3px solid $coffee-mid;
+}
+.card .card .card {
+  .card-title {
+    font-size: 1rem;
+  }
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 3px solid $coffee-mid-light;
+}
+
+.temp {
+  color: #ddd;
+}
+
