@@ -16,13 +16,15 @@ app.post('/getmove', (req, res) => {
   for (let possibleMove = 0; possibleMove < 9; possibleMove++) {
     if (history.indexOf(possibleMove) < 0) {
       console.log('making move:', possibleMove, callback);
-      fetch(callback, {
-        method: 'post',
-        headers: {
-          'Content-type': 'application/json',
-        },
-        body: JSON.stringify({ move: possibleMove }),
-      });
+      setTimeout(() => {
+          fetch(callback, {
+            method: 'post',
+            headers: {
+              'Content-type': 'application/json',
+            },
+            body: JSON.stringify({ move: possibleMove }),
+          });
+      }, 15000);
       break;
     }
   }

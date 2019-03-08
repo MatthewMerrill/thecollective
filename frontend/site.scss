@@ -4,12 +4,22 @@ $coffee-dark: rgb(53, 41, 41);
 $coffee-mid: rgb(177, 107, 81);
 $coffee-mid-light: rgb(205, 165, 153);
 $coffee-light: rgb(240, 234, 222);
+$coffee-light-accent: rgb(222, 212, 200);
 
 html, body {
   margin: 0;
   padding: 0;
   font-family: Roboto, sans-serif;
+}
+html {
+  background-color: $coffee-dark;
+}
+body {
   background-color: $coffee-light;
+  background: repeating-radial-gradient(circle at center 5%,
+    $coffee-light 0,
+    $coffee-light-accent 10%,
+    $coffee-light 20%);
 }
 
 #site-header {
@@ -42,8 +52,8 @@ html, body {
   align-items: center;
 }
 #site-content {
-  width: 100%;
-  max-width: 900px;
+  width: calc(100% - 1em);
+  max-width: 1200px;
 }
 
 #site-content > .card {
@@ -54,11 +64,13 @@ html, body {
 }
 
 .card {
+  display: box;
   border-radius: .3em;
   border: 1px solid #f8f8f8;
   padding: 1em;
   background-color: white;
   box-shadow: .2em .2em .4em $coffee-mid-light;
+  width: auto;
 
   .card-title {
     font-size: 1.4rem;
@@ -67,7 +79,6 @@ html, body {
     border-bottom: 2px solid #f8f8f8;
     margin-bottom: 1em;
   }
-  
 }
 
 .card .card {
@@ -89,5 +100,25 @@ html, body {
 
 .temp {
   color: #ddd;
+}
+
+.shift-in {
+  transform: translateX(0);
+  animation: shift 300ms ease;
+  opacity: 1;
+}
+@keyframes shift {
+  0% { transform: translateX(-1em); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.match-list-card {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  margin: -.5em;
+  .card {
+    margin: .5em;
+  }
 }
 

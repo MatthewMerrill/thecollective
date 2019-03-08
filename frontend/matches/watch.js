@@ -5,11 +5,7 @@ import {MatchWidget} from '/components/match_widget.js';
 
 setTimeout(async () => {
   try {
-    let matchResponse = await fetch('http://localhost:3000/matches');
-    let matches = Object.values(await matchResponse.json());
-    const element = matches.map(match =>
-        <MatchWidget match={match} key={match.id} />
-    );
+    const element = <div className="card-title">Watching: AAAA vs BBBB</div>;
 
     ReactDOM.render(
       element,

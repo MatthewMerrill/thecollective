@@ -44,7 +44,7 @@ function checkAndWipeNonce(nonce, purpose) {
   throw new Error('BAD NONCE');
 }
 
-function askForMove(bot, game, match) {
+function askForMove(bot, gameId, match) {
   let theHook = `${bot.hook}/getmove`;
   // TODO: this should be brokered by an external server that can only
   // send requests OUT of the network (and receive in from internal for
@@ -52,7 +52,7 @@ function askForMove(bot, game, match) {
   // utilizing this to send local requests
   let nonce = getNonce('makemove', {
     bot: bot.id,
-    game: game.id,
+    game: gameId,
     match: match.id
   });
   return fetch(theHook, {
@@ -121,14 +121,15 @@ app.post('/startmatch', async (req, res) => {
 
   console.log('asking for move');
   try {
-    await askForMove(bot0, game, matchState);
+    await askForMove(bot0, gameId, matchState);
     console.log('did it happen?')
   } catch (err) {
     console.error('yikes', err);
   }
 });
 
-app.post('/makemove/:nonce', (req, res) => {
+app.post('/makemove/:nonce', async (req, res) => {
+  let { move } = req.body;
   let nonce = req.params['nonce'];
   let noncePayload;
   try {
@@ -138,8 +139,25 @@ app.post('/makemove/:nonce', (req, res) => {
     console.log('bad nonce', nonce);
     return;
   }
-  console.log(noncePayload);
-  console.log('made move at:', req.body);
+  let game = db.get('games').get(noncePayload.game).value();
+  let match = db.get('matches').get(noncePayload.match).value();
+  if (game === undefined || match === undefined) {
+    res.sendStatus(400);
+    return;
+  }
+  // Validate move is legal
+  match.history.push(move);
+  db.get('matches').get(noncePayload.match).update({ history: match.history }).write();
+  // TODO: Is game over? Who won? Stalemate?
+  // updateMatchState(game, match, move);
+  match.turn ^= 1;
+  let otherBot = db.get('bots').get(match.bots[match.turn]).value();
+  try {
+    await askForMove(otherBot, game.id, match);
+  } catch (err) {
+    console.error(err);
+  }
+  res.sendStatus(200);
 });
 
 app.listen(3000);
