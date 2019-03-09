@@ -1,18 +1,19 @@
-import * as React from 'React';
-export class MatchWidget extends React.Component {
-  constructor(props) {
-    super(props);
-    this.match = props.match;
-  }
-  render() {
-    return (
-      <div className="card shift-in" key={this.props.match.id}>
-        <div className="card-title">{this.props.match.bots[0]} vs {this.props.match.bots[1]}</div>
-        <div className="card-content">
-          <li>Playing {this.props.match.game}</li>
-          <li>{this.props.match.movesIn} moves in, {this.props.match.bots[this.props.match.turn]} to play</li>
-        </div>
+import * as React from 'react';
+
+export function MatchWidget(props) {
+  let watchLink = `/matches/watch.html?id=${props.match.id}`
+  let descriptionLine = (props.match.winner === undefined)
+      ? <li>{props.match.movesIn} moves in, {props.match.bots[props.match.turn]} to play</li>
+      : <li>Winner: {props.match.bots[props.match.winner]}</li>;
+  return (
+    <div className="card" key={props.match.id}>
+      <div className="card-title">
+        <a href={watchLink}>{props.match.bots[0]} vs {props.match.bots[1]}</a>
       </div>
-    );
-  }
+      <div className="card-content">
+        <li>Playing {props.match.game}</li>
+        {descriptionLine}
+      </div>
+    </div>
+  );
 }

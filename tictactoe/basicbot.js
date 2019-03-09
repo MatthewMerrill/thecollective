@@ -24,7 +24,7 @@ app.post('/getmove', (req, res) => {
             },
             body: JSON.stringify({ move: possibleMove }),
           });
-      }, 15000);
+      }, 5000);
       break;
     }
   }

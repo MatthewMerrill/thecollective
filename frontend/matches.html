@@ -31,10 +31,21 @@
               </div>
             </div>
           </div>
+          <div class="card-tray">
+            <button onclick="makenewmatch()">Create</button>
+          </div>
         </div>
       </div>
     </div>
   </body>
   <script src="matches.js"></script>
 </html>
-
+<script>
+  function makenewmatch() {
+    fetch('http://localhost:3000/startmatch', {
+      method: 'post',
+      headers: { 'Content-type': 'application/json' },
+      body: JSON.stringify({ game: 'tictactoe', bots: ['r2', 'bender']})
+    });
+  }
+</script>

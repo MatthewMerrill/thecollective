@@ -10,6 +10,7 @@ const db = low(adapter);
 
 const uuidv4 = require('uuid/v4')
 const fetch = require('node-fetch');
+const cron = require('cron');
 
 const callbackBase = 'http://localhost:3000';
 
@@ -25,17 +26,18 @@ app.use(cors());
 
 function getNonce(purpose, payload) {
   let nonce;
+  let curtime = new Date().getTime();
+  let expire_time = curtime + 15000;
   do {
     nonce = uuidv4();
   } while (db.get('nonces').has(nonce).value());
-  if (db.get('nonces').set(nonce, {nonce, purpose, payload}).write()) {
+  if (db.get('nonces').set(nonce, {nonce, purpose, expire_time, payload}).write()) {
     return nonce;
   }
 }
 
 function checkAndWipeNonce(nonce, purpose) {
   let record = db.get('nonces').get(nonce).value();
-  console.log('found record', record);
   if (record && record.purpose === purpose) {
     if (db.get('nonces').unset(nonce).write()) {
       return record.payload;
@@ -67,28 +69,67 @@ function askForMove(bot, gameId, match) {
   });
 }
 
+async function getRender(game, history) {
+  let renderRes = await fetch(game.hook + '/render', {
+    method: 'post',
+    headers: {
+      'Content-type': 'application/json',
+    },
+    body: JSON.stringify(history),
+  });;
+  return renderRes.json();
+}
+
 app.get('/bots', (req, res) => {
   const bots = db.get('bots').value();
   // TODO: hide private stuffs
   res.send(bots);
 });
 
-app.get('/matches', (req, res) => {
+app.get('/matches', async (req, res) => {
   const bots = db.get('bots').value();
   const games = db.get('games').value();
   const matchList = [];
   for (let match of Object.values(db.get('matches').value())) {
-    console.log(match);
     let { bots: [botId0, botId1], game: gameId } = match;
+    if (!match.render) {
+      match.render = await getRender(games[gameId], match.history);
+      db.get('matches').get(match.id).set('render', match.render).write();
+    }
     matchList.push({
       id: match.id,
       game: games[gameId].name,
       bots: [bots[botId0].name, bots[botId1].name],
       movesIn: match.history.length,
       turn: match.turn,
+      winner: match.winner,
+      render: match.render,
     });
   }
   res.send(matchList);
+});
+
+app.get('/match/:id', async (req, res) => {
+  // TODO validate
+  let match = db.get('matches').get(req.params['id']).value();
+  let game = db.get('games').get(match.game).value();
+  let botNames = [];
+  for (let botId of match.bots) {
+    botNames.push(db.get('bots').get(botId).get('name').value());
+  }
+  if (!match.render) {
+    match.render = await getRender(game, match.history);
+    db.get('matches').get(match.id).set('render', match.render).write();
+  }
+  res.send({
+    id: match.id,
+    game: game.name,
+    bots: botNames,
+    history: match.history,
+    turn: match.turn,
+    winner: match.winner,
+    render: match.render,
+  });
 });
 
 app.post('/startmatch', async (req, res) => {
@@ -109,20 +150,21 @@ app.post('/startmatch', async (req, res) => {
     matchId = uuidv4();
   } while (db.get('matches').has(matchId).value());
 
+
+  let render = await getRender(game, []);
   let matchState = {
     id: matchId,
     game: game.id,
     bots: [bot0.id, bot1.id],
     history: [],
     turn: 0,
+    render,
   };
   db.get('matches').set(matchId, matchState).write();
   res.send(matchState);
 
-  console.log('asking for move');
   try {
     await askForMove(bot0, gameId, matchState);
-    console.log('did it happen?')
   } catch (err) {
     console.error('yikes', err);
   }
@@ -145,20 +187,80 @@ app.post('/makemove/:nonce', async (req, res) => {
     res.sendStatus(400);
     return;
   }
-  // Validate move is legal
-  match.history.push(move);
-  db.get('matches').get(noncePayload.match).update({ history: match.history }).write();
-  // TODO: Is game over? Who won? Stalemate?
-  // updateMatchState(game, match, move);
-  match.turn ^= 1;
-  let otherBot = db.get('bots').get(match.bots[match.turn]).value();
+  let isLegal, winner, render;
   try {
-    await askForMove(otherBot, game.id, match);
+    let validationRes = await fetch(`${game.hook}/validateMove`, {
+      method: 'post',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        history: match.history,
+        move,
+      }),
+    });
+    ({isLegal, winner, render} = await validationRes.json());
   } catch (err) {
-    console.error(err);
+    // panic! at the stack trace
+    console.error('error while validating move', err);
   }
+
+  if (!isLegal) {
+    // TODO: make game over or something
+    console.error('REE BAD MOVE');
+    res.sendStatus(400);
+    return;
+  }
+
+  let updates = {};
+  match.history.push(move);
+  updates.history = match.history;
+  if (render === undefined) {
+    render = await getRender(game, match.history);
+  }
+  updates.render = render;
+
+  if (winner !== undefined) {
+    updates.winner = winner;
+    updates.turn = -1;
+    console.log('we have a winner', winner);
+  }
+  else {
+    match.turn ^= 1;
+    let otherBot = db.get('bots').get(match.bots[match.turn]).value();
+    try {
+      await askForMove(otherBot, game.id, match);
+    } catch (err) {
+      console.error(err);
+    }
+    updates.turn = match.turn;
+  }
+  console.log(updates);
+  db.get('matches').get(match.id).assign(updates).write();
   res.sendStatus(200);
 });
+
+(async () => {
+  cron.job('0 * * * * * ', () => {
+    try {
+      const curtime = new Date().getTime();
+      let toRemove = db.get('nonces')
+        .values()
+        .filter(record => {
+          return record.expire_time === undefined
+            || record.expire_time < curtime;
+        })
+        .value();
+      for (let item of toRemove) {
+        db.get('nonces')
+          .unset(item.nonce)
+          .write();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, null, true, 'America/Los_Angeles')
+})();
 
 app.listen(3000);
 

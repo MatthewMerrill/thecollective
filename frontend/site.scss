@@ -1,10 +1,14 @@
 @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800|Roboto');
 
 $coffee-dark: rgb(53, 41, 41);
+$coffee-dark-5: rgb(66, 54, 54);
+$coffee-dark-10: rgb(79, 67, 67);
 $coffee-mid: rgb(177, 107, 81);
 $coffee-mid-light: rgb(205, 165, 153);
 $coffee-light: rgb(240, 234, 222);
 $coffee-light-accent: rgb(222, 212, 200);
+
+$font-montserrat: Montserrat, Roboto, sans-serif;
 
 html, body {
   margin: 0;
@@ -13,13 +17,51 @@ html, body {
 }
 html {
   background-color: $coffee-dark;
+  min-height: 100%;
 }
 body {
+  min-height: 100%;
   background-color: $coffee-light;
-  background: repeating-radial-gradient(circle at center 5%,
+  background: repeating-radial-gradient(circle at center -5%,
     $coffee-light 0,
-    $coffee-light-accent 10%,
-    $coffee-light 20%);
+    $coffee-light-accent 9em,
+    $coffee-light 11em);
+}
+h1, h2, h3, h4, h5, h6, .card-title {
+  font-family: Montserrat, Roboto, sans-serif;
+  a, a:visited {
+    color: black;
+    text-decoration-style: solid;
+  }
+}
+
+button {
+  display: block;
+  padding: .2em .7em;
+  border: none;
+  outline: none;
+  border-radius: .3em;
+  background-color: $coffee-dark;
+  color: $coffee-light;
+  font-family: $font-montserrat;
+  font-weight: bold;
+  box-shadow: none;
+  transition: 300ms box-shadow, background-color;
+}
+button:hover {
+  background-color: $coffee-dark;
+  box-shadow: .1em .1em .3em $coffee-dark;
+}
+button:hover:active {
+  box-shadow: .1em .1em .1em $coffee-dark;
+}
+button:active {
+  background-color: $coffee-dark-5;
+}
+button.light-btn {
+  background-color: $coffee-light;
+  color: $coffee-dark;
+  transform: scale(0.90);
 }
 
 #site-header {
@@ -75,9 +117,13 @@ body {
   .card-title {
     font-size: 1.4rem;
     font-weight: bold;
-    font-family: Montserrat;
+    font-family: Montserrat, Roboto, sans-serif;
     border-bottom: 2px solid #f8f8f8;
-    margin-bottom: 1em;
+    margin-bottom: .5em;
+  }
+
+  .card-tray {
+    margin-top: 1em;
   }
 }
 
@@ -113,12 +159,39 @@ body {
 }
 
 .match-list-card {
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: flex-start;
-  margin: -.5em;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 1em;
   .card {
-    margin: .5em;
+    display: block;
+  }
+}
+
+.matchRender {
+  tr {
+    td {
+      background-color: $coffee-mid-light;
+    }
+    td:nth-child(2n+1) {
+      background-color: $coffee-light;
+    }
+  }
+  tr:nth-child(2n+1) {
+    td {
+      background-color: $coffee-light;  
+    }
+    td:nth-child(2n+1) {
+      background-color: $coffee-mid-light;
+    }
+  }
+  td {
+    white-space: pre;
+    margin: 0;
+    padding: 0;
+    min-width: 3ch;
+    text-align: center;
+    font-size: 1.2em;
+    color: $coffee-dark;
   }
 }
 
