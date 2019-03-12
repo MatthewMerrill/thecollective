@@ -24,10 +24,10 @@ db.defaults({
 app.use(bodyParser.json());
 app.use(cors());
 
-function getNonce(purpose, payload) {
+function getNonce(purpose, payload, duration) {
   let nonce;
   let curtime = new Date().getTime();
-  let expire_time = curtime + 15000;
+  let expire_time = curtime + (duration || 15000);
   do {
     nonce = uuidv4();
   } while (db.get('nonces').has(nonce).value());
@@ -80,10 +80,38 @@ async function getRender(game, history) {
   return renderRes.json();
 }
 
+app.get('/games', (req, res) => {
+  let games = db.get('games').values();
+  let gameList = [];
+  for (let game of games) {
+    gameList.push({
+      id: game.id,
+      name: game.name,
+    });
+  }
+  res.send(gameList);
+});
+
 app.get('/bots', (req, res) => {
   const bots = db.get('bots').value();
   // TODO: hide private stuffs
   res.send(bots);
+});
+
+app.post('/bots', (req, res) => {
+  const payload = {
+    bot: {
+      name: req.body.botName,
+      game: req.body.game,
+      hook: req.body.butHook,
+    },
+    author: {
+      name: req.body.authorName,
+      email: req.body.authorEmail,
+    }
+  }
+  const nonce = getNonce('registration', payload, 15000 * 60);
+  res.sendStatus(201);
 });
 
 app.get('/matches', async (req, res) => {

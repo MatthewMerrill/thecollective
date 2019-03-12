@@ -106,12 +106,19 @@ button.light-btn {
 }
 
 .card {
+  box-shadow: .2em .2em .4em $coffee-mid-light;
+}
+.card.inset {
+  box-shadow: inset .2em .2em .4em $coffee-mid-light;
+  border-left: none !important;
+}
+.card {
   display: box;
   border-radius: .3em;
   border: 1px solid #f8f8f8;
+  margin: 1em 0;
   padding: 1em;
   background-color: white;
-  box-shadow: .2em .2em .4em $coffee-mid-light;
   width: auto;
 
   .card-title {
@@ -193,5 +200,11 @@ button.light-btn {
     font-size: 1.2em;
     color: $coffee-dark;
   }
+}
+
+#botCreateForm {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: flex-start;
 }
 

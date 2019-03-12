@@ -8,13 +8,35 @@
       <div id="site-content">
         <div class="card">
           <div class="card-title">Bots</div>
-          <div class="card-content" id="bots-root">
-            <ul>
-              <li class="temp">Robots</li>
-              <li class="temp">Robots</li>
-              <li class="temp">Robots</li>
-              <li class="temp">I made them with AI</li>
-            </ul>
+          <div class="card-content">
+            <div class="card inset">
+              <div class="card-content" id="bots-root">
+                <ul>
+                  <li class="temp">Robots</li>
+                  <li class="temp">Robots</li>
+                  <li class="temp">Robots</li>
+                  <li class="temp">I made them with AI</li>
+                </ul>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Create Bot</div>
+              <div class="card-content" id="botCreateForm">
+                <select required id="select-game">
+                  <option selected value="loading..." disabled>Loading...</option>
+                </select>
+                <input required id="botName" type="text" autocomplete="off"
+                       placeholder="Bot Name" required />
+                <input required id="botHook" autocomplete="url" type="url"
+                       placeholder="http://webhook.example.com/hook"
+                       pattern="http(s)?://.*"/>
+                <input required id="authorName" type="text" autocomplete="name"
+                       placeholder="Author Name"/>
+                <input required id="authorEmail" type="email" autocomplete="email"
+                       placeholder="AuthorName@example.com"/>
+                <button class="btn">Submit</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
