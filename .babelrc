@@ -2,9 +2,10 @@
   "plugins": ["@babel/transform-runtime"],
   "presets": [
     "@babel/preset-react",
+    ["env", {"targets":{"browsers":["last 1 Chrome version"]}}],
     ["@babel/preset-env", {
       "targets": {
-        "chrome": "70",
+        "browsers": ["last 1 Chrome version"],
       },
     }]
   ]

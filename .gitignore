@@ -6,3 +6,5 @@ dist/
 db.json
 db.sqlite
 
+.env
+

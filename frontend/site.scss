@@ -35,8 +35,25 @@ h1, h2, h3, h4, h5, h6, .card-title {
   }
 }
 
+body[loggedin] {
+  .if-logged-in {
+    display: inherit;
+  }
+  .if-logged-out {
+    display: none;
+  }
+}
+body:not([loggedin]) {
+  .if-logged-in {
+    display: none;
+  }
+  .if-logged-out {
+    display: inherit;
+  }
+}
+
 button {
-  display: block;
+  //display: block;
   padding: .2em .7em;
   border: none;
   outline: none;
@@ -48,8 +65,12 @@ button {
   box-shadow: none;
   transition: 300ms box-shadow, background-color;
 }
+button[disabled] {
+  background-color: $coffee-dark !important;
+  color: $coffee-dark-10 !important;
+}
 button:hover {
-  background-color: $coffee-dark;
+  background-color: $coffee-dark-5;
   box-shadow: .1em .1em .3em $coffee-dark;
 }
 button:hover:active {
@@ -64,11 +85,24 @@ button.light-btn {
   transform: scale(0.90);
 }
 
+table {
+  thead tr {
+    font-weight: bold;
+    font-family: $font-montserrat;
+    border-bottom: 2pt solid $coffee-mid;
+  }
+  td {
+    padding: 0 2em;
+  }
+  border-collapse: collapse;
+  margin: auto;
+}
+
 #site-header {
   padding: .5em;
   background-color: $coffee-dark;
   color: $coffee-light;
-  font-family: Montserrat, Roboto, sans-serif;
+  font-family: $font-montserrat;
   font-weight: normal;
   line-height: 1.2em;
 
@@ -84,6 +118,14 @@ button.light-btn {
 
   a, a:visited {
     color: $coffee-light;
+  }
+}
+.nav-right {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  * {
+    margin: auto .1em;
   }
 }
 

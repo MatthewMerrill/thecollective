@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en_US">
   <head>
     <include src="includes/head.html"></include>
   </head>
@@ -38,14 +39,16 @@
       </div>
     </div>
   </body>
+  <include src="includes/tail.html"></include>
   <script src="matches.js"></script>
 </html>
 <script>
   function makenewmatch() {
-    fetch('http://localhost:3000/startmatch', {
+    fetch('http://localhost:3000/matches', {
       method: 'post',
+      credentials: 'include',
       headers: { 'Content-type': 'application/json' },
-      body: JSON.stringify({ game: 'tictactoe', bots: ['r2', 'bender']})
+      body: JSON.stringify({ game: 1, bots: [1, 2]})
     });
   }
 </script>

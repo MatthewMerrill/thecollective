@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en_US">
   <head>
     <include src="includes/head.html"></include>
   </head>
@@ -19,28 +20,14 @@
                 </ul>
               </div>
             </div>
-            <div class="card">
-              <div class="card-title">Create Bot</div>
-              <div class="card-content" id="botCreateForm">
-                <select required id="select-game">
-                  <option selected value="loading..." disabled>Loading...</option>
-                </select>
-                <input required id="botName" type="text" autocomplete="off"
-                       placeholder="Bot Name" required />
-                <input required id="botHook" autocomplete="url" type="url"
-                       placeholder="http://webhook.example.com/hook"
-                       pattern="http(s)?://.*"/>
-                <input required id="authorName" type="text" autocomplete="name"
-                       placeholder="Author Name"/>
-                <input required id="authorEmail" type="email" autocomplete="email"
-                       placeholder="AuthorName@example.com"/>
-                <button class="btn">Submit</button>
-              </div>
+            <div class="card if-logged-in" id="create-bot">
+              <div class="card-title temp">Create Bot (Loading)</div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </body>
+  <include src="includes/tail.html"></include>
   <script src="bots.js"></script>
 </html>
