@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name          TEXT NOT NULL,
   email         TEXT NOT NULL,
-  joined        DATETIME DEFAULT CURRENT_TIMESTAMP
+  joined        DATETIME DEFAULT CURRENT_TIMESTAMP,
+  is_admin         BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS oauth_registrations (
@@ -63,5 +64,13 @@ CREATE TABLE IF NOT EXISTS moves (
   PRIMARY KEY (match_id, idx),
   FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
   FOREIGN KEY (bot_id) REFERENCES bots(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS makemove_callbacks (
+  match_id      INTEGER NOT NULL,
+  bot_id        INTEGER NOT NULL,
+  idx           INTEGER NOT NULL,
+  token         TEXT NOT NULL PRIMARY KEY,
+  deadline      DATETIME NOT NULL
 );
 

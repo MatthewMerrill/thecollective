@@ -17,7 +17,7 @@ app.use(cors({
 app.use(session({
   name: 'session',
   secret: (
-    process.env.SESSION_SALT
+    (process.env.SESSION_SALT && process.env.SESSION_SALT.length)
       ? (new Date().getTime() + '')
       : '')
     + (process.env.SESSION_SECRET || '73h_C0113c71v3'),
@@ -30,6 +30,8 @@ app.use(session({
 const datastore = require('./datastore.js');
 const db = new datastore.SqliteDataStore();
 db.initialize('db.sqlite');
+
+const webhookHandler = new (require('./webhook_handler.js'))(db);
 
 const githubAuth = new (require('./github_auth.js').GitHubAuth)(db);
 
@@ -73,6 +75,20 @@ app.get('/games', async (req, res) => {
     });
   }
   res.send(gameList);
+});
+
+app.post('/games', async (req, res) => {
+  let isAdmin = req.session.user_id !== undefined
+    && await db.isAdminUser(req.session.user_id);
+  if (isAdmin) {
+    let {name, webhook} = req.body;
+    let game = { name, webhook };
+    game.firstRender = await webhookHandler.getFirstRenderFromGame(game);
+    await db.insertGame(game);
+    res.status(201).send(JSON.stringify(game.firstRender));
+  } else {
+    res.sendStatus(403);
+  }
 });
 
 app.get('/bots', async (req, res) => {
@@ -131,6 +147,7 @@ app.post('/matches', async (req, res) => {
     console.log(match);
     let matchId = await db.insertMatch(match);
     res.send('' + matchId);
+    webhookHandler.askForNextMoveForMatchId(matchId);
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
@@ -157,6 +174,36 @@ app.get('/match/:id/move/:idx', async (req, res) => {
   }
 });
 
+app.post('/match/:matchId/move/:idx', async (req, res) => {
+  let {matchId, idx} = req.params;
+  let {move, token} = req.body;
+  let curTime = new Date().getTime();
+  let callbackContext = await db.getMakeMoveContext(matchId, idx, token);
+  if (callbackContext && curTime < callbackContext.deadline) {
+    try {
+      let match = await db.getMatch(matchId);
+      let game = await db.getGame(match.game.id, {includeWebhook:true});
+      let newHistory = match.moves.map(move => move.move).concat([move]);
+      let renderAfter = await webhookHandler.getRenderAfterHistory(game,newHistory);
+      await db.insertMove({
+        matchId,
+        botId: callbackContext.bot_id,
+        move,
+        idx,
+        timestamp: curTime,
+        renderAfter: JSON.stringify(renderAfter),
+      });
+      res.sendStatus(200);
+      webhookHandler.askForNextMoveForMatchId(matchId);
+    } catch (err) {
+      console.error(err);
+      res.sendStatus(400);
+    }
+  }
+  else {
+    res.sendStatus(400);
+  }
+});
 
 app.listen(3000);
 

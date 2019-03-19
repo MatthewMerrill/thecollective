@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en_US">
+  <head>
+    <include src="includes/head.html"></include>
+  </head>
+  <body>
+    <include src="includes/header.html"></include>
+    <div id="site-content-container">
+      <div id="site-content">
+        <div class="card">
+          <div class="card-title">Games</div>
+          <div class="card-content">
+            <div class="card inset">
+              <div class="card-content" id="games-root">
+                <ul>
+                </ul>
+              </div>
+            </div>
+            <div class="card if-admin" id="create-game">
+              <div class="card-title temp">Create Game (Loading)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <include src="includes/tail.html"></include>
+  <script src="games.js"></script>
+</html>

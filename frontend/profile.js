@@ -10,6 +10,10 @@ const API_BASE = process.env.API_BASE;
       if (profile === 24601) {
         alert('Hello, Jean Valjean');
       }
+      if (profile.isAdmin) {
+        window.isAdmin = true;
+        document.body.setAttribute('isadmin', true);
+      }
       window.loggedIn = true;
       document.body.setAttribute('loggedin', true);
     }

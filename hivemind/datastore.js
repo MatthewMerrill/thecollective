@@ -2,6 +2,7 @@
 const util = require('util');
 const fs = require('fs');
 const path = require('path');
+const uuidv4 = require('uuid/v4');
 
 const readFile = util.promisify(fs.readFile);
 
@@ -38,14 +39,15 @@ module.exports.SqliteDataStore = class SqliteDataStore {
   }
 
   async insertGame(game) {
-    await this.db.run(
+    let {lastID} = await this.db.run(
       `
       INSERT INTO games (
-        name, webhook
+        name, webhook, first_render
       )
-      VALUES (?, ?)
+      VALUES (?, ?, ?)
       `,
-      [game.name, game.webhook]);
+      [game.name, game.webhook, JSON.stringify(game.firstRender)]);
+    return lastID;
   }
 
   async getGames() {
@@ -53,6 +55,19 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       `
       SELECT id, name FROM games
       `, []);
+  }
+
+  async getGame(gameId, {includeWebhook=false}) {
+    return await this.db.get(
+      `
+      SELECT
+        game.id as id,
+      ${includeWebhook ? 'game.webhook as webhook,' : ''}
+        game.name as name
+      FROM games game
+      WHERE game.id=?
+      `,
+      [gameId]);
   }
 
   async insertOAuthUser(user, oauthProvider, oauthId) {
@@ -101,7 +116,8 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       SELECT
         user.id as id,
         user.name as name,
-        user.email as email
+        user.email as email,
+        user.is_admin as isAdmin
       FROM users user
       WHERE user.id=?
       `,
@@ -118,7 +134,25 @@ module.exports.SqliteDataStore = class SqliteDataStore {
     for (let {provider} of oauths) {
       profile.oauth_services.push(provider);
     }
+    if (!profile.isAdmin) {
+      delete profile.isAdmin;
+    }
     return profile;
+  }
+
+  async isAdminUser(userId) {
+    if (userId === undefined) {
+      return false;
+    }
+    let {isAdmin} = await this.db.get(
+      `
+      SELECT
+        user.is_admin as isAdmin
+      FROM users user
+      WHERE user.id=?
+      `,
+      [userId]);
+    return isAdmin;
   }
 
   async insertBot(bot) {
@@ -137,12 +171,13 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       ]);
   }
 
-  async getBot(botId) {
+  async getBot(botId, { includeWebhook = false}) {
     let result = await this.db.get(
       `
       SELECT
         bot.id as id,
         bot.name as name,
+      ${includeWebhook ? 'bot.webhook as webhook,' : ''}
         author.id as author$id,
         author.name as author$name,
         game.id as game$id,
@@ -190,8 +225,8 @@ module.exports.SqliteDataStore = class SqliteDataStore {
         bot0.name as bots$0$name,
         bot1.id as bots$1$id,
         bot1.name as bots$1$name,
-        count(*) as movesIn,
-        count(*) % 2 as turn,
+        count(move) as movesIn,
+        count(move) % 2 as turn,
         match.started as started,
         match.ended as ended,
         winner.id as winner$id,
@@ -202,7 +237,7 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       INNER JOIN bots bot0 ON member0.bot_id=bot0.id
       INNER JOIN bots bot1 ON member1.bot_id=bot1.id
       LEFT JOIN bots winner ON winner.id=match.winner_id
-      INNER JOIN games game ON game.id=match.id
+      INNER JOIN games game ON game.id=match.game_id
       LEFT JOIN moves move ON move.match_id=match.id
       GROUP BY match.id
       `, []); // holy guacamole
@@ -221,7 +256,7 @@ module.exports.SqliteDataStore = class SqliteDataStore {
         bot0.name as bots$0$name,
         bot1.id as bots$1$id,
         bot1.name as bots$1$name,
-        count(*) % 2 as turn,
+        count(move) % 2 as turn,
         match.started as started,
         match.ended as ended,
         winner.id as winner$id,
@@ -232,7 +267,7 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       INNER JOIN bots bot0 ON member0.bot_id=bot0.id
       INNER JOIN bots bot1 ON member1.bot_id=bot1.id
       LEFT JOIN bots winner ON winner.id=match.winner_id
-      INNER JOIN games game ON game.id=match.id
+      INNER JOIN games game ON game.id=match.game_id
       LEFT JOIN moves move ON move.match_id=match.id
       WHERE match.id=?
       GROUP BY match.id
@@ -254,6 +289,29 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       [id]);
     match.moves = moves;
     return match;
+  }
+
+  async insertMove(move) {
+    await this.db.run(
+      `
+      INSERT INTO moves (
+        match_id,
+        bot_id,
+        move,
+        idx,
+        timestamp,
+        render_after
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [
+        move.matchId,
+        move.botId,
+        move.move,
+        move.idx,
+        move.timestamp,
+        move.renderAfter
+      ]);
   }
 
   async getMove(matchId, moveIdx) {
@@ -301,5 +359,34 @@ module.exports.SqliteDataStore = class SqliteDataStore {
     return matchId;
   }
 
+  async generateMakeMoveCallback(matchId, botId, moveIdx, deadline) {
+    let uuid;
+    do {
+      uuid = uuidv4();
+      try {
+        this.db.run(
+          `
+          INSERT INTO makemove_callbacks (
+            match_id, bot_id, token, idx, deadline
+          )
+          VALUES (?, ?, ?, ?, ?)
+          `,
+          [matchId, botId, uuid, moveIdx, deadline]);
+        break;
+      } catch (err) { /* probably conflicting uuid */ }
+    } while (true);
+    return uuid;
+  }
+
+  async getMakeMoveContext(matchId, moveIdx, token) {
+    return await this.db.get(
+      `
+      SELECT
+        match_id, bot_id, deadline
+      FROM makemove_callbacks
+      WHERE token=? and match_id=? and idx=?
+      `,
+      [token, matchId, moveIdx]);
+  }
 
 }

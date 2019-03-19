@@ -14,7 +14,7 @@ app.post('/getmove', (req, res) => {
   res.sendStatus(200);
 
   for (let possibleMove = 0; possibleMove < 9; possibleMove++) {
-    if (history.indexOf(possibleMove) < 0) {
+    if (history.indexOf(possibleMove + '') < 0) {
       console.log('making move:', possibleMove, callback);
       setTimeout(() => {
           fetch(callback, {
@@ -22,7 +22,10 @@ app.post('/getmove', (req, res) => {
             headers: {
               'Content-type': 'application/json',
             },
-            body: JSON.stringify({ move: possibleMove }),
+            body: JSON.stringify({
+              move: possibleMove + '',
+              token: req.body.token,
+            }),
           });
       }, 5000);
       break;

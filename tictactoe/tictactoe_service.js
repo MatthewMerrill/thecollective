@@ -17,6 +17,7 @@ class GameState {
   }
   
   appendMove(move, who) {
+    move = 1*move;
     if (!this.validMove(move)) {
       throw new Error('Invalid Move!');
     }
@@ -91,10 +92,14 @@ app.post('/validateMove', (req, res) => {
 });
 
 app.post('/render', (req, res) => {
+  console.log('we got a request!');
+  try {
   let history = req.body;
   let state = new GameState();
   state.appendHistory(history);
   res.send(state.render());
+  } catch(err) { console.error(err); }
+  console.log('there you go');
 });
 
 app.post('/getwinner', (req, res) => {
@@ -104,5 +109,11 @@ app.post('/getwinner', (req, res) => {
   res.send(state.getWinner());
 });
 
-app.listen(5001);
+app.get('/ping', (req, res) => {
+  res.send('ack');
+});
+
+const port = 7001;
+console.log(`Listening on ${port}...`);
+app.listen(port);
 

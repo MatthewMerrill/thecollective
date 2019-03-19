@@ -51,6 +51,22 @@ body:not([loggedin]) {
     display: inherit;
   }
 }
+body[isadmin] {
+  .if-admin {
+    display: inherit;
+  }
+  .if-not-admin {
+    display: none;
+  }
+}
+body:not([isadmin]) {
+  .if-admin {
+    display: none;
+  }
+  .if-not-admin {
+    display: inherit;
+  }
+}
 
 button {
   //display: block;
@@ -244,7 +260,7 @@ table {
   }
 }
 
-#botCreateForm {
+#botCreateForm, #gameCreateForm {
   display: flex;
   flex-flow: column nowrap;
   align-items: flex-start;
