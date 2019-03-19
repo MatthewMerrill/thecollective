@@ -18,7 +18,7 @@ function assignRowResult(result, into) {
   return into;
 }
 
-module.exports.SqliteDataStore = class SqliteDataStore {
+module.exports = class SqliteDataStore {
   
   constructor() {
     const Database = require('sqlite-async');
@@ -130,6 +130,9 @@ module.exports.SqliteDataStore = class SqliteDataStore {
       WHERE oauth.user_id=?
       `,
       [userId])
+    if (profile === undefined) {
+      return undefined;
+    }
     profile.oauth_services = [];
     for (let {provider} of oauths) {
       profile.oauth_services.push(provider);

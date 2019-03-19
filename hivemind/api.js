@@ -27,9 +27,45 @@ app.use(session({
   }
 }));
 
-const datastore = require('./datastore.js');
-const db = new datastore.SqliteDataStore();
-db.initialize('db.sqlite');
+const SqliteDataStore = require('../db/datastore_sqlite.js');
+let db;
+if (process.env.DB_SERVICE_BASE && process.env.DB_SERVICE_BASE !== '') {
+  const DB_SERVICE_BASE = process.env.DB_SERVICE_BASE;
+  const props = Object.getOwnPropertyNames(SqliteDataStore.prototype);
+  const fetch = require('node-fetch');
+  db = {};
+  for (let key of props) {
+    if (key !== 'constructor' && key !== 'initialize') {
+      db[key] = async function() {
+        try {
+          let args = [...arguments];
+          console.log(key, JSON.stringify(args));
+          let res = await fetch(`${DB_SERVICE_BASE}/${key}`, {
+            method: 'post',
+            headers: {
+              'Content-type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(args),
+          });
+          if (res.status === 204) {
+            return undefined;
+          }
+          else {
+            return res.json();
+          }
+        } catch (err) {
+          console.error(err);
+          throw err;
+        }
+      };
+    }
+  }
+}
+else {
+  db = new SqliteDataStore();
+  db.initialize('db.sqlite');
+}
 
 const webhookHandler = new (require('./webhook_handler.js'))(db);
 
