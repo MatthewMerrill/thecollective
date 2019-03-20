@@ -4,7 +4,7 @@ const cors = require('cors');
 const session = require('cookie-session');
 
 require('dotenv').config();
-const callbackBase = process.env.API_BASE;
+const callbackBase = process.env.EXTERNAL_API_URL;
 
 const app = express();
 app.use(bodyParser.json());
@@ -27,48 +27,19 @@ app.use(session({
   }
 }));
 
-const SqliteDataStore = require('../db/datastore_sqlite.js');
 let db;
-if (process.env.DB_SERVICE_BASE && process.env.DB_SERVICE_BASE !== '') {
-  const DB_SERVICE_BASE = process.env.DB_SERVICE_BASE;
-  const props = Object.getOwnPropertyNames(SqliteDataStore.prototype);
-  const fetch = require('node-fetch');
-  db = {};
-  for (let key of props) {
-    if (key !== 'constructor' && key !== 'initialize') {
-      db[key] = async function() {
-        try {
-          let args = [...arguments];
-          console.log(key, JSON.stringify(args));
-          let res = await fetch(`${DB_SERVICE_BASE}/${key}`, {
-            method: 'post',
-            headers: {
-              'Content-type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify(args),
-          });
-          if (res.status === 204) {
-            return undefined;
-          }
-          else {
-            return res.json();
-          }
-        } catch (err) {
-          console.error(err);
-          throw err;
-        }
-      };
-    }
-  }
+if (process.env.USE_DB_SERVICE == 'true') {
+  const RemoteDataStoreClient = require('../db/service_client.js');
+  db = new RemoteDataStoreClient();
 }
 else {
+  const SqliteDataStore = require('../db/datastore_sqlite.js');
   db = new SqliteDataStore();
   db.initialize('db.sqlite');
 }
 
+const pub = require('../pubsub/redis_pub');
 const webhookHandler = new (require('./webhook_handler.js'))(db);
-
 const githubAuth = new (require('./github_auth.js').GitHubAuth)(db);
 
 async function getRender(game, history) {
@@ -241,5 +212,5 @@ app.post('/match/:matchId/move/:idx', async (req, res) => {
   }
 });
 
-app.listen(3000);
+app.listen(process.env.API_PORT || 80);
 

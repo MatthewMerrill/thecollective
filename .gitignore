@@ -5,6 +5,7 @@ dist/
 
 db.json
 db.sqlite
-
 .env
+.env.docker
+docker.sock
 

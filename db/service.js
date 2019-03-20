@@ -40,7 +40,7 @@ db.initialize(process.env.DB_FILE || './db.sqlite').then(() => {
       console.log('Cannot route for method/property', key);
     }
   }
-  const port = process.env.DB_SERVICE_PORT || 3030;
+  const port = process.env.DB_PORT || 3030;
   console.log(`DB Service hosted on :${port}`);
   app.listen(port);
 }).catch(console.error);
